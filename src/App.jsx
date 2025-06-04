@@ -1,15 +1,4 @@
 /*
- Milestone 1: Creare un campo di ricerca e mostrare la lista dei suggerimenti
-Crea un campo di input (<input type="text">) in cui l’utente può digitare.
-
-Effettua una chiamata API a: 
-/products?search=[query]
-
-La query deve essere sostituita con il testo digitato.
-Mostra i risultati API sotto l'input in una tendina di suggerimenti.
-Se l'utente cancella il testo, la tendina scompare.
-Obiettivo: Mostrare suggerimenti dinamici in base alla ricerca dell'utente.
-
 Milestone 2: Implementare il Debounce per Ottimizzare la Ricerca
 Attualmente, ogni pressione di tasto esegue una richiesta API. Questo è inefficiente!
 Implementa una funzione di debounce per ritardare la chiamata API fino a quando l’utente smette di digitare per un breve periodo (es. 300ms)
@@ -18,28 +7,31 @@ Dopo l’implementazione, verifica che la ricerca non venga eseguita immediatame
 Obiettivo: Ridurre il numero di richieste API e migliorare le prestazioni.
 */
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 
+function debounce(callback, delay){
+  let timer;
+  return(value) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      callback(value);
+    }, delay)
+  }
+}
 function App() {
 
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([])
 
-   useEffect(()=> {
-    /*if(query.trim()){
-      fetch(`http://localhost:3333/products?search=${query}`)
-    .then(response => response.json())
-    .then(data => setSuggestions(data))
-    .catch(error => console.error(error))
-    } else {
-      setSuggestions([])
-    }*/
-    const fetchData = async () => {
-      if (query.trim()) {
+   
+    const fetchData = useCallback(debounce(async (searchQuery) => {
+
+      if (searchQuery.trim()) {
         try {
-          const response = await fetch(`http://localhost:3333/products?search=${query}`);
+          const response = await fetch(`http://localhost:3333/products?search=${searchQuery}`);
           const data = await response.json();
           setSuggestions(data);
+          console.log(data)
         } catch (error) {
           console.error('Errore durante la ricerca:', error);
           setSuggestions([]);
@@ -47,20 +39,24 @@ function App() {
       } else {
         setSuggestions([]);
       }
-    };
+    }, 500),
+    []
+  );
 
-    fetchData();
-    
-   }, [query])
+  useEffect(() => {
+    fetchData(query);
+  }, [query, fetchData]);
   
    return (
     <>
-    <div>
+    <div className="search-container">
       <input
       type="text"
+      name="text"
       placeholder="Cerca..."
       value={query}
       onChange={(e) => setQuery(e.target.value)}
+      className="search-input"
       />
 
        {suggestions.length > 0 ? (
